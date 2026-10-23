@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="bg">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Alternate Strip Flip Slider</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* Контейнер на слайдера */
+        .slider-container {
+            position: relative;
+            width: 500px;
+            height: 500px;
+            background: #000;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            border-radius: 8px;
+        }
+
+        .strips-wrapper {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Вертикален режим: подредба в ред */
+        .mode-vertical {
+            display: flex;
+            flex-direction: row;
+        }
+
+        /* Хоризонтален режим: подредба в колона */
+        .mode-horizontal {
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Структура на всяка лента */
+        .strip {
+            position: relative;
+            perspective: 1000px;
+        }
+
+        .mode-vertical .strip {
+            height: 100%;
+            width: 5%; 
+        }
+
+        .mode-horizontal .strip {
+            width: 100%;
+            height: 5%; 
+        }
+
+        .strip-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Предна и задна страна на лентите */
+        .strip-front, .strip-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            background-size: 500px 500px;
+            background-repeat: no-repeat;
+        }
+
+        .strip-front {
+            transform: rotateY(0deg);
+        }
+
+        .strip-back {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="slider-container">
+        <div class="strips-wrapper mode-vertical" id="stripsWrapper"></div>
+    </div>
+
+    <script>
+        const images = [
+            "https://instagram.fvar1-1.fna.fbcdn.net/v/t51.82787-15/810518950_18415175935159554_8572855529694644634_n.jpg?stp=dst-jpg_e35_s640x640_tt6&_nc_cat=100&_nc_map=urlgen_bucketless&ig_cache_key=Mzk4NjA1MDk3MTI2OTY0NTc4NQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMjczOS5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=eNfjEWu3XAQQ7kNvwEsUrmO&_nc_oc=Ado939fg1CEYtbGVjw-BQIDufnMjo8tQAFtM_kW5KexDDOmHicf1pQYpBMxgvVt1Ick&_nc_zt=23&_nc_ht=instagram.fvar1-1.fna&_nc_gid=CPJbktN0aM7eoVNN08NZfA&_nc_ss=7b6a8&oh=00_AQMrwXM-pTxycG5nOFqsEqa4vIU8-1UIRyjy0Mb77ikhaw&oe=6AE13C63",
+            "https://instagram.fvar1-1.fna.fbcdn.net/v/t51.82787-15/847287237_18419703169159554_7630241145216647581_n.jpg?stp=dst-jpg_e35_s640x640_tt6&_nc_cat=110&_nc_map=urlgen_bucketless&ig_cache_key=NDAwODQyNjk5MDY5OTUyNTk1Nw%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMjMyMC5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=mqmn2LHk7L0Q7kNvwFueO30&_nc_oc=Adro-98Hl0CHjyLfrXrvle2HHyg1GvVwanVIcFuhQHAnFDTNE0Zq_E2TY71XyaKs680&_nc_zt=23&_nc_ht=instagram.fvar1-1.fna&_nc_gid=CPJbktN0aM7eoVNN08NZfA&_nc_ss=7b6a8&oh=00_AQMN0p08-2Z_RwkJQZgepsAVsyNB0jJy2lR-Rt4gD9hVqw&oe=6AE12D1D",
+            "https://instagram.fvar1-1.fna.fbcdn.net/v/t51.82787-15/846528973_18419280277159554_1566126333728738977_n.jpg?stp=dst-jpg_e35_s640x640_tt6&_nc_cat=110&_nc_map=urlgen_bucketless&ig_cache_key=NDAwNjM5NzM0MTIzMDkzMTMzNg%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMTk3OS5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=7mcFeSpPV84Q7kNvwFVfepi&_nc_oc=Adp6Quvv9bsAzNiVtp7x0gq73XMLSkGR8VSPvts9dKSNuLgF6W2pgcBXLTKCLNWaGyo&_nc_zt=23&_nc_ht=instagram.fvar1-1.fna&_nc_gid=CPJbktN0aM7eoVNN08NZfA&_nc_ss=7b6a8&oh=00_AQM_f3AGRZEQvCbQFyVe6HPbYfZhSjjmNCjPsZFeX114Fg&oe=6AE140C4",
+            "https://instagram.fvar1-1.fna.fbcdn.net/v/t51.82787-15/802244537_18414556957159554_4745179879437287643_n.jpg?stp=dst-jpg_e35_s640x640_tt6&_nc_cat=101&_nc_map=urlgen_bucketless&ig_cache_key=Mzk4MzA2NTM1NjU5ODYzNzI2Ng%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMzA3Mi5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=NUKIUrwzk18Q7kNvwGODjrz&_nc_oc=AdoYhRTFpMyBJHcuS-I-Uo6tZo1q1qOxXcReSNnULQPizClYnfu1QDybdhuxNjH4EP4&_nc_zt=23&_nc_ht=instagram.fvar1-1.fna&_nc_gid=CPJbktN0aM7eoVNN08NZfA&_nc_ss=7b6a8&oh=00_AQPXmrx4ARQHFM8HxOOeP3e4kNjqYabshFumjYwHCGJ6-A&oe=6AE13C62",
+            "https://instagram.fvar1-1.fna.fbcdn.net/v/t51.82787-15/840621660_18418824439159554_3512517835860359761_n.jpg?stp=dst-jpg_e35_s640x640_tt6&_nc_cat=104&_nc_map=urlgen_bucketless&ig_cache_key=NDAwNDIzMzgwNjE2NjA1MTgwMQ%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkZFRUQueHBpZHMuMjExNy5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=9XYakJpvtI4Q7kNvwHSqJII&_nc_oc=AdpQJJrN0OrvZhcGuTvNI7cBndRUaRu2zueGIrlyY0VoFohvTmIiap3Qwim-7deNGzM&_nc_zt=23&_nc_ht=instagram.fvar1-1.fna&_nc_gid=xgfBnvgWbh6nyf3mBP-TdA&_nc_ss=7b6a8&oh=00_AQPSuFqwydKJRmqBR6NLS1ZmBR1Nyo8GivMnvaRoo8OcBA&oe=6AE15469",            
+            "https://instagram.fvar1-1.fna.fbcdn.net/v/t51.82787-15/649226686_18129233086543866_5084516912747369512_n.jpg?stp=dst-jpg_e35_tt6&_nc_cat=109&_nc_map=urlgen_bucketless&ig_cache_key=MjM2MjczMjU1MTcwMjk0MTg0OA%3D%3D.3-ccb7-5&ccb=7-5&_nc_sid=58cdad&efg=eyJ2ZW5jb2RlX3RhZyI6IkNBUk9VU0VMX0lURU0ueHBpZHMuMTA4MC5zZHIucmVndWxhcl9waG90by5DMyJ9&_nc_ohc=FqdSwspTnxEQ7kNvwHOkw64&_nc_oc=Adow8jD8_eZyGeqdU-cx3glFBGzq-P3mLaz5Bgr416enp4nigfSlGRrun_9eFiSBo10&_nc_zt=23&_nc_ht=instagram.fvar1-1.fna&_nc_gid=DW7c_F9vYYZdXc_EEvSCpQ&_nc_ss=7b6a8&oh=00_AQNe_DAFhBFUqOTrZJnkHEltYqrA-1DFe_fq6mLFy17PDA&oe=6AE13A5E"
+        ];
+
+        const numStrips = 20; 
+        const wrapper = document.getElementById('stripsWrapper');
+        let currentIdx = 0;
+        let isFlipped = false;
+        let currentDirection = 'vertical'; // Редува се: 'vertical' / 'horizontal'
+
+        // Динамично изграждане на лентите според посоката
+        function buildSlider(direction, imageSource) {
+            wrapper.innerHTML = '';
+            wrapper.className = `strips-wrapper mode-${direction}`;
+            
+            for (let i = 0; i < numStrips; i++) {
+                const strip = document.createElement('div');
+                strip.className = 'strip';
+
+                const inner = document.createElement('div');
+                inner.className = 'strip-inner';
+                inner.id = `inner-${i}`;
+
+                const front = document.createElement('div');
+                front.className = 'strip-front';
+                
+                const back = document.createElement('div');
+                back.className = 'strip-back';
+
+                // Позициониране на фоновото изображение според посоката
+                if (direction === 'vertical') {
+                    front.style.backgroundPosition = `-${i * 25}px 0px`;
+                    back.style.backgroundPosition = `-${i * 25}px 0px`;
+                    back.style.transform = 'rotateY(180deg)';
+                } else {
+                    front.style.backgroundPosition = `0px -${i * 25}px`;
+                    back.style.backgroundPosition = `0px -${i * 25}px`;
+                    back.style.transform = 'rotateX(180deg)';
+                }
+
+                front.style.backgroundImage = `url(${imageSource})`;
+                back.style.backgroundImage = `url(${imageSource})`;
+
+                inner.appendChild(front);
+                inner.appendChild(back);
+                strip.appendChild(inner);
+                wrapper.appendChild(strip);
+            }
+        }
+
+        // Анимация за прелистване със сменяща се посока
+        function nextSlide() {
+            const nextIdx = (currentIdx + 1) % images.length;
+            const targetImage = images[nextIdx];
+
+            for (let i = 0; i < numStrips; i++) {
+                const inner = document.getElementById(`inner-${i}`);
+                if (!inner) continue;
+                
+                const front = inner.querySelector('.strip-front');
+                const back = inner.querySelector('.strip-back');
+
+                setTimeout(() => {
+                    if (!isFlipped) {
+                        back.style.backgroundImage = `url(${targetImage})`;
+                        inner.style.transform = currentDirection === 'vertical' ? 'rotateY(180deg)' : 'rotateX(180deg)';
+                    } else {
+                        front.style.backgroundImage = `url(${targetImage})`;
+                        inner.style.transform = currentDirection === 'vertical' ? 'rotateY(0deg)' : 'rotateX(0deg)';
+                    }
+                    
+                    // Когато последната лента завърши анимацията
+                    if (i === numStrips - 1) {
+                        currentIdx = nextIdx;
+                        isFlipped = !isFlipped;
+                        
+                        // Сменяме посоката за следващия преход
+                        currentDirection = currentDirection === 'vertical' ? 'horizontal' : 'vertical';
+                        
+                        // Пренареждаме структурата на заден план веднага след като преходът приключи
+                        setTimeout(() => {
+                            buildSlider(currentDirection, images[currentIdx]);
+                            if (isFlipped) {
+                                for (let j = 0; j < numStrips; j++) {
+                                    const nextInner = document.getElementById(`inner-${j}`);
+                                    if (nextInner) {
+                                        nextInner.style.transition = 'none';
+                                        nextInner.style.transform = currentDirection === 'vertical' ? 'rotateY(180deg)' : 'rotateX(180deg)';
+                                        setTimeout(() => { nextInner.style.transition = ''; }, 50);
+                                    }
+                                }
+                            }
+                        }, 900);
+                    }
+                }, i * 40); // Ефект на "вълна"
+            }
+        }
+
+        // Първоначално стартиране
+        buildSlider(currentDirection, images[currentIdx]);
+        setInterval(nextSlide, 5000);
+    </script>
+</body>
+</html>
